@@ -10,9 +10,9 @@
 
 namespace Auth
 {
-    struct accTokRetType
+    struct atVerifyRType
     {
-        bool isValid = true;
+        bool is_valid = true;
         std::string reason = std::string();
         jwt::jwt_object token = jwt::jwt_object();
 
@@ -25,7 +25,8 @@ namespace Auth
     static const std::string type = "JWT";
     static const std::string issuer = "todolist.com";
     static const auto expiration_time = std::chrono::seconds(1200);
-    static const std::string stateStrArr[11] = {
+    static const int sub_inval_str_index = 4;
+    static const std::string ver_state_str_arr[11] = {
         "",
         "Invalid algorithm",
         "Token has expired",
@@ -39,9 +40,12 @@ namespace Auth
         "Invalid type used"};
 
     std::string generateRandomToken(size_t lenght);
-    jwt::jwt_object generateAccessToken(const std::string& key, const std::string& userLogin, const int& userId);
+
+    jwt::jwt_object generateAccessToken(const std::string& key, const std::string& userLogin);
     std::pair<bool, std::string> validateAccessToken(const std::string& token, const std::string& key);
-    accTokRetType verifyAccessToken(const std::string &accToken, const std::string& key);
+    std::pair<bool, std::string> verifyAccessToken(const std::string &accToken, const std::string& key, jwt::jwt_object& token);
+
+
 }
 
 #endif //AUTH_H
