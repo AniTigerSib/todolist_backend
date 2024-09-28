@@ -31,7 +31,7 @@ std::string Auth::generateRandomToken(const size_t lenght)
     return token;
 }
 
-jwt::jwt_object Auth::generateAccessToken(const std::string& key, const std::string& userLogin, const int& userId)
+jwt::jwt_object Auth::generateAccessToken(const std::string& key, const std::string& userLogin)
 {
     using namespace jwt::params;
 
@@ -44,25 +44,25 @@ jwt::jwt_object Auth::generateAccessToken(const std::string& key, const std::str
                               {"sub", userLogin}}),
                           secret(key)};
     token.add_claim("exp", std::chrono::system_clock::now() + Auth::expiration_time)
-         .add_claim("iat", std::chrono::system_clock::now())
-         .add_claim("uid", userId);
+         .add_claim("iat", std::chrono::system_clock::now());
     return token;
 }
 
 std::pair<bool, std::string> Auth::validateAccessToken(const std::string& token, const std::string& key)
 {
     using namespace jwt::params;
-    std::error_code ec;
     std::pair<bool, std::string> result;
 
     try
     {
         auto dec_token = jwt::decode(token, algorithms({Auth::alg}), secret(key), verify(false));
+        LOG_INFO << "User JWT validated";
+
         result.first = true;
         result.second.clear();
     } catch (const jwt::DecodeError& e)
     {
-        LOG_WARN << "JWT decode error: " << e.what();
+        LOG_WARN << "JWT decode error or token not valid: " << e.what();
 
         result.first = false;
         result.second.append(e.what());
@@ -71,24 +71,35 @@ std::pair<bool, std::string> Auth::validateAccessToken(const std::string& token,
     return std::move(result);
 }
 
-Auth::accTokRetType Auth::verifyAccessToken(const std::string &accToken, const std::string& key)
+std::pair<bool, std::string> Auth::verifyAccessToken(const std::string &accToken, const std::string& key, jwt::jwt_object& token)
 {
     using namespace jwt::params;
-
-    Auth::accTokRetType result;
+    std::pair<bool, std::string> result;
     std::error_code ec;
 
-    auto token = jwt::decode(accToken, algorithms({Auth::alg}), ec, secret(key),
-                                     jwt::params::issuer(Auth::issuer));
+    token = std::move(jwt::decode(accToken, algorithms({Auth::alg}), ec, secret(key),
+                                  jwt::params::issuer(Auth::issuer)));
+
+    auto has_sub_field = token.has_claim("sub");
 
     if (ec)
     {
-        LOG_INFO << "User JWT not valid: " << ec.message();
+        LOG_INFO << "User JWT not verified: " << ec.message();
 
-        result.isValid = false;
-        result.reason.append(stateStrArr[ec.value()]);
+        result.first = false;
+        result.second.append(Auth::ver_state_str_arr[ec.value()]);
+    } else if (!has_sub_field)
+    {
+        LOG_INFO << "User JWT not verified: " << Auth::ver_state_str_arr[Auth::sub_inval_str_index];
+
+        result.first = false;
+        result.second.append(Auth::ver_state_str_arr[Auth::sub_inval_str_index]);
+    } else
+    {
+        LOG_INFO << "User JWT verified";
+
+        result.first = true;
     }
 
-    result.token = std::move(token);
     return std::move(result);
 }
