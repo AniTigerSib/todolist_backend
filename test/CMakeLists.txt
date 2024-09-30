@@ -3,7 +3,9 @@ project(todolist_backend_test CXX)
 
 add_executable(${PROJECT_NAME} test_main.cc
         ../lib/Auth.h
-        ../lib/Auth.cpp)
+        ../lib/Auth.cpp
+        ../models/User.cpp
+        ../models/User.h)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method

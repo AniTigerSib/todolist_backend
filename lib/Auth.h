@@ -41,11 +41,9 @@ namespace Auth
 
     std::string generateRandomToken(size_t lenght);
 
-    jwt::jwt_object generateAccessToken(const std::string& key, const std::string& userLogin);
+    std::string generateAccessToken(const std::string& key, const std::string& userLogin);
     std::pair<bool, std::string> validateAccessToken(const std::string& token, const std::string& key);
     std::pair<bool, std::string> verifyAccessToken(const std::string &accToken, const std::string& key, jwt::jwt_object& token);
-
-
 }
 
 #endif //AUTH_H

@@ -31,9 +31,10 @@ std::string Auth::generateRandomToken(const size_t lenght)
     return token;
 }
 
-jwt::jwt_object Auth::generateAccessToken(const std::string& key, const std::string& userLogin)
+std::string Auth::generateAccessToken(const std::string& key, const std::string& userLogin)
 {
     using namespace jwt::params;
+    std::string result;
 
     jwt::jwt_object token{algorithm(alg),
                           headers({
@@ -45,7 +46,19 @@ jwt::jwt_object Auth::generateAccessToken(const std::string& key, const std::str
                           secret(key)};
     token.add_claim("exp", std::chrono::system_clock::now() + Auth::expiration_time)
          .add_claim("iat", std::chrono::system_clock::now());
-    return token;
+
+    try
+    {
+        result = std::move(token.signature());
+    } catch (jwt::MemoryAllocationException& e)
+    {
+        LOG_FATAL << "Memory allocation fatal error getting JWT signature: " << e.what();
+    } catch (jwt::SigningError& e)
+    {
+        LOG_ERROR << "Signing error getting JWT signature: " << e.what();
+    }
+
+    return std::move(result);
 }
 
 std::pair<bool, std::string> Auth::validateAccessToken(const std::string& token, const std::string& key)
@@ -55,11 +68,17 @@ std::pair<bool, std::string> Auth::validateAccessToken(const std::string& token,
 
     try
     {
-        auto dec_token = jwt::decode(token, algorithms({Auth::alg}), secret(key), verify(false));
+        auto decToken = jwt::decode(token, algorithms({Auth::alg}), secret(key), verify(false));
         LOG_INFO << "User JWT validated";
 
         result.first = true;
         result.second.clear();
+    } catch (jwt::MemoryAllocationException& e)
+    {
+        LOG_FATAL << "Memory allocation fatal error validating JWT: " << e.what();
+
+        result.first = false;
+        result.second = "Server error";
     } catch (const jwt::DecodeError& e)
     {
         LOG_WARN << "JWT decode error or token not valid: " << e.what();
@@ -75,30 +94,39 @@ std::pair<bool, std::string> Auth::verifyAccessToken(const std::string &accToken
 {
     using namespace jwt::params;
     std::pair<bool, std::string> result;
-    std::error_code ec;
 
-    token = std::move(jwt::decode(accToken, algorithms({Auth::alg}), ec, secret(key),
-                                  jwt::params::issuer(Auth::issuer)));
-
-    auto has_sub_field = token.has_claim("sub");
-
-    if (ec)
+    try
     {
-        LOG_INFO << "User JWT not verified: " << ec.message();
+        std::error_code ec;
+        token = std::move(jwt::decode(accToken, algorithms({Auth::alg}), ec, secret(key),
+                                      jwt::params::issuer(Auth::issuer)));
+
+        auto has_sub_field = token.has_claim("sub");
+
+        if (ec)
+        {
+            LOG_INFO << "User JWT not verified: " << ec.message();
+
+            result.first = false;
+            result.second.append(Auth::ver_state_str_arr[ec.value()]);
+        } else if (!has_sub_field)
+        {
+            LOG_INFO << "User JWT not verified: " << Auth::ver_state_str_arr[Auth::sub_inval_str_index];
+
+            result.first = false;
+            result.second.append(Auth::ver_state_str_arr[Auth::sub_inval_str_index]);
+        } else
+        {
+            LOG_INFO << "User JWT verified";
+
+            result.first = true;
+        }
+    } catch (jwt::MemoryAllocationException& e)
+    {
+        LOG_FATAL << "Memory allocation fatal error verifying JWT: " << e.what();
 
         result.first = false;
-        result.second.append(Auth::ver_state_str_arr[ec.value()]);
-    } else if (!has_sub_field)
-    {
-        LOG_INFO << "User JWT not verified: " << Auth::ver_state_str_arr[Auth::sub_inval_str_index];
-
-        result.first = false;
-        result.second.append(Auth::ver_state_str_arr[Auth::sub_inval_str_index]);
-    } else
-    {
-        LOG_INFO << "User JWT verified";
-
-        result.first = true;
+        result.second = "Server error";
     }
 
     return std::move(result);
