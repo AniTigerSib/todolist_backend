@@ -14,16 +14,20 @@ class UserException;
 
 class User {
 public:
+    // Constructors
     User(drogon::orm::Row& row);
     User(const char* login, const char* email, const char* password);
     User(std::string& login, std::string& email, std::string& password);
     User(std::string login, std::string email, std::string password);
 
+    // Getters and setters
     const std::string& getLogin() const { return login_; }
     const std::string& getEmail() const { return email_; }
     const std::string& getPassword() const { return password_; }
     int getId() const { return id_; }
 
+    // Static methods
+    static void validateUserData(const char *login, const char *email, const char *password);
     static std::future<drogon::orm::Result> getGetByLoginAsyncFutureSqlExec(drogon::orm::DbClientPtr& clientPtr, std::string& login);
     static User getByLogin(drogon::orm::DbClientPtr& clientPtr, std::string& login);
 
