@@ -1,7 +1,3 @@
-//
-// Created by michael on 9/27/24.
-//
-
 #ifndef AUTH_H
 #define AUTH_H
 
