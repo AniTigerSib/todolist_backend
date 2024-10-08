@@ -1,6 +1,8 @@
-#include "User.h"
+#include "user.h"
+#include <cstddef>
 #include <regex>
 #include <string>
+#include "../server.h"
 
 std::regex const User::loginRegex_ = std::regex("^[\\w]{3,20}$");
 std::regex const User::emailRegex_ = std::regex(R"(^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$)");
@@ -8,7 +10,7 @@ std::regex const User::passwordRegex_ = std::regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*
 
 // +++++++++++++++++ Initialization +++++++++++++++++ //
 
-User::User(drogon::orm::Row& row) {
+User::User(const drogon::orm::Row& row) {
     id_ = row["id"].as<int>();
     login_ = std::move(row["login"].as<std::string>());
     email_ = std::move(row["email"].as<std::string>());
@@ -18,17 +20,17 @@ User::User(drogon::orm::Row& row) {
 void User::validateUserData(const char *login, const char *email, const char *password) {
     std::cmatch m;
 
-    if (!std::regex_match(login, m, loginRegex_))
+    if (login != nullptr && (strlen(login) > loginSizeMax_ || !std::regex_match(login, m, loginRegex_)))
         throw UserException("Invalid login format");
-    if (!std::regex_match(email, m, emailRegex_))
+    if (email != nullptr && (strlen(email) > emailSizeMax_ || !std::regex_match(email, m, emailRegex_)))
         throw UserException("Invalid email format");
-    if (!std::regex_match(password, m, passwordRegex_))
+    if (password != nullptr && !std::regex_match(password, m, passwordRegex_))
         throw UserException("Invalid password format");
 }
 
 User::User(const char* login, const char* email, const char* password) {
     if (login == nullptr || email == nullptr || password == nullptr)
-        throw UserException("Invalid ");
+        throw ServerException("Invalid user data");
     validateUserData(login, email, password);
 
     login_ = std::string(login);
@@ -37,7 +39,7 @@ User::User(const char* login, const char* email, const char* password) {
     id_ = -1;
 }
 
-User::User(std::string& login, std::string& email, std::string& password) {
+User::User(const std::string& login, const std::string& email, const std::string& password) {
     validateUserData(login.c_str(), email.c_str(), password.c_str());
 
     login_ = login;
@@ -59,19 +61,16 @@ User::User(std::string login, std::string email, std::string password) {
 
 
 
-std::future<drogon::orm::Result> User::getGetByLoginAsyncFutureSqlExec(drogon::orm::DbClientPtr& clientPtr, std::string& login) {
-    std::cmatch m;
-
-    if (!std::regex_match(login.c_str(), m, loginRegex_))
-        throw UserException("Invalid login format");
+std::future<drogon::orm::Result> User::getGetByLoginAsyncFutureSqlExec(const drogon::orm::DbClientPtr& clientPtr, std::string& login) {
+    validateUserData(login.c_str(), nullptr, nullptr);
 
     return clientPtr->execSqlAsyncFuture("select id, login, email, password from users where login=$1", login);
 }
 
-User User::getByLogin(drogon::orm::DbClientPtr& clientPtr, std::string& login) {
+User User::getByLogin(const drogon::orm::DbClientPtr& clientPtr, std::string& login) {
     auto result = getGetByLoginAsyncFutureSqlExec(clientPtr, login).get();
 
-    if (result.size() == 0)
+    if (result.empty())
         throw UserException("User not found");
 
     auto res = result[0];
