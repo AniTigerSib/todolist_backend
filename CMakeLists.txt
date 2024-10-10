@@ -20,8 +20,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME} main.cc
-        lib/Auth.h
-        lib/Auth.cpp)
+        lib/auth.h
+        lib/auth.cc)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method
@@ -47,6 +47,11 @@ elseif (CMAKE_CXX_STANDARD LESS 20)
 else ()
     message(STATUS "use c++20")
 endif ()
+
+# Defines DEBUG if CMAKE_BUILD_TYPE matches
+if (CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG)")
+    add_definitions(-DDEBUG)
+endif()
 
 aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
