@@ -2,26 +2,28 @@
 // Created by michael on 9/27/24.
 //
 
-#include "Auth.h"
+#include "auth.h"
 
 #include <random>
 
 #ifdef DEBUG
-std::string Auth::accTokRetType::toString()
+std::string lib::Auth::atVerifyRType::toString() const
 {
     std::stringstream ss;
-    ss << "accTokRetType: { ";
-    ss << (isValid ? "true " : "false ") << reason << token.signature(); // May throw errors
+    ss << "atVerifyRType: { ";
+    ss << (is_valid ? "true " : "false ") << reason << token.signature(); // May throw errors
+    ss << "}";
+    return ss.str();
 }
 #endif
 
 
-std::string Auth::generateRandomToken(const size_t lenght)
+std::string lib::Auth::generateRandomToken(const size_t lenght)
 {
     static const std::string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, chars.size() - 1);
+    std::uniform_int_distribution<> dis(0, static_cast<int>(chars.size()) - 1);
     std::string token;
 
     for (size_t i = 0; i < lenght; i++)
@@ -31,7 +33,7 @@ std::string Auth::generateRandomToken(const size_t lenght)
     return token;
 }
 
-std::string Auth::generateAccessToken(const std::string& key, const std::string& userLogin)
+std::string lib::Auth::generateAccessToken(const std::string& key, const std::string& userLogin)
 {
     using namespace jwt::params;
     std::string result;
@@ -61,7 +63,7 @@ std::string Auth::generateAccessToken(const std::string& key, const std::string&
     return std::move(result);
 }
 
-std::pair<bool, std::string> Auth::validateAccessToken(const std::string& token, const std::string& key)
+std::pair<bool, std::string> lib::Auth::validateAccessToken(const std::string& token, const std::string& key)
 {
     using namespace jwt::params;
     std::pair<bool, std::string> result;
@@ -90,7 +92,7 @@ std::pair<bool, std::string> Auth::validateAccessToken(const std::string& token,
     return std::move(result);
 }
 
-std::pair<bool, std::string> Auth::verifyAccessToken(const std::string &accToken, const std::string& key, jwt::jwt_object& token)
+std::pair<bool, std::string> lib::Auth::verifyAccessToken(const std::string &accToken, const std::string& key, jwt::jwt_object& token)
 {
     using namespace jwt::params;
     std::pair<bool, std::string> result;

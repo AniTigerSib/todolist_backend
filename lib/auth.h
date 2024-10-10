@@ -4,7 +4,7 @@
 #include <drogon/drogon.h>
 #include "jwt/jwt.hpp"
 
-namespace Auth
+namespace lib::Auth
 {
     struct atVerifyRType
     {
@@ -13,7 +13,7 @@ namespace Auth
         jwt::jwt_object token = jwt::jwt_object();
 
 #ifdef DEBUG
-        std::string toString();
+            [[nodiscard]] std::string toString() const;
 #endif
     };
 
@@ -21,7 +21,7 @@ namespace Auth
     static const std::string type = "JWT";
     static const std::string issuer = "todolist.com";
     static const auto expiration_time = std::chrono::seconds(1200);
-    static const int sub_inval_str_index = 4;
+    static constexpr int sub_inval_str_index = 4;
     static const std::string ver_state_str_arr[11] = {
         "",
         "Invalid algorithm",
