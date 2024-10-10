@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <regex>
 #include <string>
+#include <utility>
 #include "../server.h"
 
 std::regex const User::loginRegex_ = std::regex("^[\\w]{3,20}$");
@@ -18,7 +19,7 @@ User::User(const drogon::orm::Row& row)
     password_ = std::move(row["password"].as<std::string>());
 }
 
-void User::validateUserData(const char *login, const char *email, const char *password)
+void User::validateUserData(const char* login, const char* email, const char* password)
 {
     std::cmatch m;
 
@@ -38,7 +39,7 @@ User::User(const char* login, const char* email, const char* password)
 
     login_ = std::string(login);
     email_ = std::string(email);
-    password_ = std::move(hashPassword(std::string(password)));
+    password_ = std::string(password);
     id_ = -1;
 }
 
@@ -48,7 +49,7 @@ User::User(const std::string& login, const std::string& email, const std::string
 
     login_ = login;
     email_ = email;
-    password_ = std::move(hashPassword(std::string(password)));
+    password_ = password;
     id_ = -1;
 }
 
@@ -58,11 +59,33 @@ User::User(std::string login, std::string email, std::string password)
 
     login_ = std::move(login);
     email_ = std::move(email);
-    password_ = std::move(hashPassword(std::string(std::move(password))));
+    password_ = std::move(password);
     id_ = -1;
 }
 
 // ----------------- Initialization ----------------- //
+
+User User::createUserFromJsonString(Json::Value& json)
+{
+    const auto login = json["login"].asString();
+    const auto email = json["email"].asString();
+    const auto password = json["password"].asString();
+
+    return std::move(User(login.c_str(), email.c_str(), password.c_str()));
+}
+
+Json::Value User::toJson() const
+{
+    Json::Value json;
+    json["id"] = id_;
+    json["login"] = login_;
+    json["email"] = email_;
+#ifdef DEBUG
+    json["password"] = password_;
+#endif
+
+    return std::move(json);
+}
 
 
 // +++++++++++++++++ Main methods +++++++++++++++++ //

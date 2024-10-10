@@ -25,7 +25,9 @@ public:
     // Getters and setters
     [[nodiscard]] const std::string& getLogin() const { return login_; }
     [[nodiscard]] const std::string& getEmail() const { return email_; }
+    [[nodiscard]] const std::string& getPassword() const { return password_; }
     [[nodiscard]] int getId() const { return id_; }
+    [[nodiscard]] Json::Value toJson() const;
 
     // Password work
     [[nodiscard]] bool comparePassword(const std::string& password) const { return password_ == password; }
@@ -40,7 +42,8 @@ public:
 
 
     // Static methods
-    static void validateUserData(const char *login, const char *email, const char *password);
+    static User createUserFromJsonString(Json::Value& json);
+    static void validateUserData(const char* login, const char*email, const char* password);
 
     // Database getters
     static std::future<drogon::orm::Result> getUserByLoginAsyncFutureSqlExec(const drogon::orm::DbClientPtr& clientPtr, std::string& login);
@@ -66,7 +69,7 @@ class UserException final : public std::exception
 {
 public:
     explicit UserException(std::string what = "Failed to create user") : msg(std::move(what)) {}
-    std::string what() { return std::move(msg); };
+    [[nodiscard]] const char* what() const noexcept override { return msg.c_str(); }
 
 private:
     std::string msg;

@@ -8,7 +8,7 @@ class ServerException final : public std::exception
 {
 public:
     explicit ServerException(std::string what = "Failed to create user") : msg(std::move(what)) {}
-    std::string what() { return std::move(msg); };
+    [[nodiscard]] const char* what() const noexcept override { return msg.c_str(); };
 
 private:
     std::string msg;
