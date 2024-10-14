@@ -16,7 +16,9 @@ User::User(const drogon::orm::Row& row)
     id_ = row["id"].as<int>();
     login_ = std::move(row["login"].as<std::string>());
     email_ = std::move(row["email"].as<std::string>());
+    salt_ = std::move(row["salt"].as<std::string>());
     password_ = std::move(row["password"].as<std::string>());
+
 }
 
 void User::validateUserData(const char* login, const char* email, const char* password)
@@ -31,6 +33,16 @@ void User::validateUserData(const char* login, const char* email, const char* pa
         throw UserException("Invalid password format");
 }
 
+void User::setPassword(const char* password)
+{
+    if (salt_.empty())
+    {
+        salt_ = drogon::utils::secureRandomString(64);
+    }
+    password_ = std::move(hashPasswordWithSalt(password, salt_));
+    // password_ = std::move(drogon::utils::getSha256(password + salt_));
+}
+
 User::User(const char* login, const char* email, const char* password)
 {
     if (login == nullptr || email == nullptr || password == nullptr)
@@ -39,8 +51,8 @@ User::User(const char* login, const char* email, const char* password)
 
     login_ = std::string(login);
     email_ = std::string(email);
-    password_ = std::string(password);
-    id_ = -1;
+    this->setPassword(password);
+    id_ = 0;
 }
 
 User::User(const std::string& login, const std::string& email, const std::string& password)
@@ -49,29 +61,49 @@ User::User(const std::string& login, const std::string& email, const std::string
 
     login_ = login;
     email_ = email;
-    password_ = password;
-    id_ = -1;
+    this->setPassword(password.c_str());
+    id_ = 0;
 }
 
-User::User(std::string login, std::string email, std::string password)
+User::User(std::string login, std::string email, const std::string &password)
 {
     validateUserData(login.c_str(), email.c_str(), password.c_str());
 
     login_ = std::move(login);
     email_ = std::move(email);
-    password_ = std::move(password);
-    id_ = -1;
+    this->setPassword(password.c_str());
+    id_ = 0;
+}
+
+User::User(const char* login, const char* email, const char* password, const char *salt, const unsigned int id)
+{
+    login_ = std::string(login);
+    email_ = std::string(email);
+    password_ = std::string(password);
+    salt_ = std::string(salt);
+    id_ = id;
 }
 
 // ----------------- Initialization ----------------- //
 
-User User::createUserFromJsonString(Json::Value& json)
+User User::createUserFromJson(Json::Value& json)
 {
     const auto login = json["login"].asString();
     const auto email = json["email"].asString();
     const auto password = json["password"].asString();
 
     return std::move(User(login.c_str(), email.c_str(), password.c_str()));
+}
+
+User User::createFullUserFromJson(Json::Value& json)
+{
+    const auto login = json["login"].asString();
+    const auto email = json["email"].asString();
+    const auto password = json["password"].asString();
+    const auto salt = json["salt"].asString();
+    const auto id = json["id"].asUInt();
+
+    return std::move(User(login.c_str(), email.c_str(), password.c_str(), salt.c_str(), id));
 }
 
 Json::Value User::toJson() const
@@ -86,26 +118,3 @@ Json::Value User::toJson() const
 
     return std::move(json);
 }
-
-
-// +++++++++++++++++ Main methods +++++++++++++++++ //
-
-std::future<drogon::orm::Result> User::getUserByLoginAsyncFutureSqlExec(const drogon::orm::DbClientPtr& clientPtr, std::string& login)
-{
-    validateUserData(login.c_str(), nullptr, nullptr);
-
-    return clientPtr->execSqlAsyncFuture("select id, login, email, password from users where login=$1", login);
-}
-
-User User::getUserByLogin(const drogon::orm::DbClientPtr& clientPtr, std::string& login)
-{
-    const auto result = getUserByLoginAsyncFutureSqlExec(clientPtr, login).get();
-
-    if (result.empty())
-        throw UserException("User not found");
-
-    const auto res = result[0];
-    return std::move(User(res));
-}
-
-// ----------------- Main methods ----------------- //

@@ -20,17 +20,23 @@ public:
     explicit User(const drogon::orm::Row& row);
     User(const char* login, const char* email, const char* password);
     User(const std::string& login, const std::string& email, const std::string& password);
-    User(std::string login, std::string email, std::string password);
+    User(std::string login, std::string email, const std::string &password);
 
     // Getters and setters
     [[nodiscard]] const std::string& getLogin() const { return login_; }
     [[nodiscard]] const std::string& getEmail() const { return email_; }
     [[nodiscard]] const std::string& getPassword() const { return password_; }
-    [[nodiscard]] int getId() const { return id_; }
+    [[nodiscard]] const std::string& getSalt() const { return salt_; }
+    [[nodiscard]] unsigned int getId() const { return id_; }
+    void setId(const int id) { id_ = id; }
+    void setLogin(const std::string& login) { login_ = login; }
+    void setEmail(const std::string& email) { email_ = email; }
+    void setPassword(const std::string& password) { password_ = password; }
+    void setSalt(const std::string& salt) { salt_ = salt; }
     [[nodiscard]] Json::Value toJson() const;
 
     // Password work
-    [[nodiscard]] bool comparePassword(const std::string& password) const { return password_ == password; }
+    [[nodiscard]] bool comparePassword(const std::string& password) const;
     static std::string hashPassword(const std::string& password)
     {
         return std::move(drogon::utils::getSha256(password));
@@ -42,20 +48,16 @@ public:
 
 
     // Static methods
-    static User createUserFromJsonString(Json::Value& json);
+    static User createUserFromJson(Json::Value& json);
+    static User createFullUserFromJson(Json::Value& json);
     static void validateUserData(const char* login, const char*email, const char* password);
 
-    // Database getters
-    static std::future<drogon::orm::Result> getUserByLoginAsyncFutureSqlExec(const drogon::orm::DbClientPtr& clientPtr, std::string& login);
-    static User getUserByLogin(const drogon::orm::DbClientPtr& clientPtr, std::string& login);
-
-    // Database setters
-    // std::future<const drogon::orm::Result> getInsertAsyncFutureSqlExec(const drogon::orm::DbClientPtr& clientPtr);
-    // std::future<const drogon::orm::Result>  getUpdateAsyncFutureSqlExec();
-
 private:
-    int id_;
-    std::string login_, email_, password_;
+    // Inner usage constructor. Does not check validity of data.
+    User(const char* login, const char* email, const char* password, const char *salt, unsigned int id);
+    unsigned int id_;
+    std::string login_, email_, password_, salt_;
+    void setPassword(const char* password);
 
     // Constants
     static constexpr int loginSizeMax_ = 20;
