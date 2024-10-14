@@ -9,9 +9,7 @@ void reqParseMiddleware::invoke(const HttpRequestPtr &req,
     Json::Value reqJson;
     Json::Reader reader;
 
-    bool parsingSuccessful = reader.parse(req->body().data(), reqJson);
-
-    if (!parsingSuccessful)
+    if (bool parsingSuccessful = reader.parse(req->body().data(), reqJson); !parsingSuccessful)
     {
         LOG_ERROR << "Failed to parse request JSON: " << reader.getFormattedErrorMessages()
                   << " : " << req->body();
