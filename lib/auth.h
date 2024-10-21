@@ -38,8 +38,49 @@ namespace lib::Auth
     std::string generateRandomToken(size_t lenght);
 
     std::string generateAccessToken(const std::string& key, const std::string& userLogin);
-    std::pair<bool, std::string> validateAccessToken(const std::string& token, const std::string& key);
-    std::pair<bool, std::string> verifyAccessToken(const std::string &accToken, const std::string& key, jwt::jwt_object& token);
+    void validateAccessToken(const std::string& token, const std::string& key);
+    std::pair<jwt::jwt_object, std::string> verifyAccessToken(const std::string &accToken, const std::string& key);
 }
+
+class AccessTokenException : std::exception
+{
+public:
+    AccessTokenException() : reason_("Access token exception") {}
+    explicit AccessTokenException(const char *reason) : reason_(reason) {}
+    explicit AccessTokenException(std::string reason) : reason_(reason.c_str()) {}
+    explicit AccessTokenException(std::string& reason) : reason_(reason.c_str()) {}
+    [[nodiscard]] const char* what() const noexcept override { return this->reason_; }
+private:
+    const char *reason_;
+};
+
+class ATGenerateException final : AccessTokenException
+{
+public:
+    ATGenerateException() : AccessTokenException("Access token generating failed") {}
+    explicit ATGenerateException(const char *reason) : AccessTokenException(std::string("Access token generating failed: ") + reason) {}
+};
+
+class ATMemAllocException final : AccessTokenException
+{
+public:
+    ATMemAllocException() : AccessTokenException("Memory allocation failed") {}
+    explicit ATMemAllocException(const char *reason) : AccessTokenException(std::string("Memory allocation failed: ") + reason) {}
+};
+
+class ATValidationException final : AccessTokenException
+{
+public:
+    ATValidationException() : AccessTokenException("Invalid access token signature") {}
+    explicit ATValidationException(const char *reason) : AccessTokenException(std::string("Invalid access token signature: ") + reason) {}
+};
+
+class ATVerificationException final : AccessTokenException
+{
+public:
+    ATVerificationException() : AccessTokenException("Access token invalid") {}
+    explicit ATVerificationException(const char *reason) : AccessTokenException(std::string("Access token invalid: ") + reason) {}
+    explicit ATVerificationException(const std::string& reason) : AccessTokenException(reason) {}
+};
 
 #endif //AUTH_H
