@@ -17,6 +17,7 @@ class UserException;
 class User {
 public:
     // Constructors
+    User(const User& other);
     explicit User(const drogon::orm::Row& row);
     User(const char* login, const char* email, const char* password);
     User(const std::string& login, const std::string& email, const std::string& password);
@@ -28,6 +29,7 @@ public:
     [[nodiscard]] const std::string& getPassword() const { return password_; }
     [[nodiscard]] const std::string& getSalt() const { return salt_; }
     [[nodiscard]] unsigned int getId() const { return id_; }
+    std::string getToken(std::string &key);
     void setId(const int id) { id_ = id; }
     void setLogin(const std::string& login) { login_ = login; }
     void setEmail(const std::string& email) { email_ = email; }
@@ -36,7 +38,7 @@ public:
     [[nodiscard]] Json::Value toJson() const;
 
     // Password work
-    [[nodiscard]] bool comparePassword(const std::string& password) const;
+    [[nodiscard]] bool hasEqualPassword(const std::string& password) const;
     static std::string hashPassword(const std::string& password)
     {
         return std::move(drogon::utils::getSha256(password));
@@ -46,11 +48,21 @@ public:
         return std::move(drogon::utils::getSha256(password + salt));
     }
 
-
+    enum UDataEvalErrc
+    {
+        OK = 0,
+        INVALID_LOGIN = 1,
+        INVALID_EMAIL,
+        INVALID_PASSWORD
+    };
     // Static methods
     static User createUserFromJson(Json::Value& json);
-    static User createFullUserFromJson(Json::Value& json);
+    static User createFullUserFromJson(Json::Value& json); // Not validating data. Only for inner usage.
     static void validateUserData(const char* login, const char*email, const char* password);
+    static UDataEvalErrc validateUserDataErrc(const char* login, const char*email, const char* password);
+    static const char *getErrcStr(UDataEvalErrc errc);
+    static const char *getQueryGetString(bool byEmail);
+
 
 private:
     // Inner usage constructor. Does not check validity of data.
