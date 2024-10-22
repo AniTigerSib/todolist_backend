@@ -134,7 +134,7 @@ const char *User::getQueryGetString(bool byEmail)
 
 std::string User::getToken(std::string &key)
 {
-    return std::move(lib::Auth::generateAccessToken(key, login_));
+    return std::move(lib::Auth::generateAccessToken(key, std::to_string(id_)));
 }
 
 User User::createUserFromJson(Json::Value& json)

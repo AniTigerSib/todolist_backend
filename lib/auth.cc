@@ -33,7 +33,7 @@ std::string lib::Auth::generateRandomToken(const size_t lenght)
     return token;
 }
 
-std::string lib::Auth::generateAccessToken(const std::string& key, const std::string& userLogin)
+std::string lib::Auth::generateAccessToken(const std::string& key, const std::string& userId)
 {
     using namespace jwt::params;
     std::string result;
@@ -44,7 +44,7 @@ std::string lib::Auth::generateAccessToken(const std::string& key, const std::st
                               {"type", Auth::type}}),
                           payload({
                               {"iss", Auth::issuer},
-                              {"sub", userLogin}}),
+                              {"sub", userId}}),
                           secret(key)};
     token.add_claim("exp", std::chrono::system_clock::now() + Auth::expiration_time)
          .add_claim("iat", std::chrono::system_clock::now());

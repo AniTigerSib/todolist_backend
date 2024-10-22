@@ -37,7 +37,7 @@ namespace lib::Auth
 
     std::string generateRandomToken(size_t lenght);
 
-    std::string generateAccessToken(const std::string& key, const std::string& userLogin);
+    std::string generateAccessToken(const std::string& key, const std::string& userId);
     void validateAccessToken(const std::string& token, const std::string& key);
     std::pair<jwt::jwt_object, std::string> verifyAccessToken(const std::string &accToken, const std::string& key);
 
