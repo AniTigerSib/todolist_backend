@@ -92,19 +92,19 @@ std::pair<jwt::jwt_object, std::string> lib::Auth::verifyAccessToken(const std::
         jwt = std::move(jwt::decode(accToken, algorithms({Auth::alg}), ec, secret(key),
                                       jwt::params::issuer(Auth::issuer)));
 
-        auto login = jwt.payload().get_claim_value<std::string>("sub");
+        auto userId = jwt.payload().get_claim_value<std::string>("sub");
 
         if (ec)
         {
             throw ATVerificationException(Auth::ver_state_str_arr[ec.value()]);
         }
-        if (login.empty())
+        if (userId.empty())
         {
             throw ATVerificationException(Auth::ver_state_str_arr[Auth::sub_inval_str_index]);
         }
 
         result.first = std::move(jwt);
-        result.second = std::move(login);
+        result.second = std::move(userId);
     } catch (jwt::MemoryAllocationException& e)
     {
         throw ATMemAllocException(e.what());
