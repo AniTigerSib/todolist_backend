@@ -49,7 +49,7 @@ namespace lib::Auth
         explicit AccessTokenException(std::string reason) : reason_(reason.c_str()) {}
         explicit AccessTokenException(std::string& reason) : reason_(reason.c_str()) {}
         [[nodiscard]] const char* what() const noexcept override { return this->reason_; }
-    private:
+    protected:
         const char *reason_;
     };
 
@@ -58,6 +58,7 @@ namespace lib::Auth
     public:
         ATGenerateException() : AccessTokenException("Access token generating failed") {}
         explicit ATGenerateException(const char *reason) : AccessTokenException(std::string("Access token generating failed: ") + reason) {}
+        [[nodiscard]] const char* what() const noexcept override { return this->reason_; }
     };
 
     class ATMemAllocException final : AccessTokenException
@@ -65,6 +66,7 @@ namespace lib::Auth
     public:
         ATMemAllocException() : AccessTokenException("Memory allocation failed") {}
         explicit ATMemAllocException(const char *reason) : AccessTokenException(std::string("Memory allocation failed: ") + reason) {}
+        [[nodiscard]] const char* what() const noexcept override { return this->reason_; }
     };
 
     class ATValidationException final : AccessTokenException
@@ -72,14 +74,16 @@ namespace lib::Auth
     public:
         ATValidationException() : AccessTokenException("Invalid access token signature") {}
         explicit ATValidationException(const char *reason) : AccessTokenException(std::string("Invalid access token signature: ") + reason) {}
+        [[nodiscard]] const char* what() const noexcept override { return this->reason_; }
     };
 
     class ATVerificationException final : AccessTokenException
     {
     public:
         ATVerificationException() : AccessTokenException("Access token invalid") {}
-        explicit ATVerificationException(const char *reason) : AccessTokenException(std::string("Access token invalid: ") + reason) {}
+        explicit ATVerificationException(const char *reason) : AccessTokenException(reason) {}
         explicit ATVerificationException(const std::string& reason) : AccessTokenException(reason) {}
+        [[nodiscard]] const char* what() const noexcept override { return this->reason_; }
     };
 }
 

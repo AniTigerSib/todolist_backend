@@ -35,7 +35,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 
 # ##############################################################################
 
-find_package(cpp-jwt CONFIG REQUIRED)
+find_package(cpp-jwt REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE cpp-jwt::cpp-jwt)
 
 # ##############################################################################
